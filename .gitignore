@@ -1,0 +1,9 @@
+target/
+*.log
+.env
+*.db
+*.sqlite
+data/
+backup/
+.idea/
+*.iml

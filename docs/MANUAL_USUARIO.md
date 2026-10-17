@@ -1,5 +1,8 @@
 # Manual do Usuário - Gerenciador de Senhas Seguras
 
+> Estado atual: este repositório ainda não contém `src/main` nem `src/test`. Os comandos de compilação e execução dependem da futura adição do código Java.
+
+
 ## Introdução
 
 O Gerenciador de Senhas Seguras é uma aplicação que ajuda você a criar, armazenar e gerenciar suas senhas de forma segura. Todas as senhas são criptografadas e protegidas por uma senha mestra que apenas você conhece.

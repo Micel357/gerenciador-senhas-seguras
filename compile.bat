@@ -78,7 +78,7 @@ echo    java -jar target\password-manager-1.0.0.jar help
 echo.
 echo Documentação disponível em:
 echo    - README.md (documentação técnica)
-echo    - MANUAL_USUARIO.md (manual do usuário)
+echo    - docs/MANUAL_USUARIO.md (manual do usuário)
 echo.
 pause
 

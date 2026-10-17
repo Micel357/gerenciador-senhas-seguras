@@ -1,5 +1,8 @@
 # Guia de Instalação - Gerenciador de Senhas Seguras
 
+> Estado atual: este repositório ainda não contém `src/main` nem `src/test`. Os comandos de compilação e execução dependem da futura adição do código Java.
+
+
 ## Requisitos do Sistema
 
 ### Obrigatórios
@@ -171,8 +174,8 @@ java -Xmx512m -jar password-manager-1.0.0.jar
 pasta-do-projeto/
 ├── password-manager-1.0.0.jar    # Programa principal
 ├── README.md                     # Documentação técnica
-├── MANUAL_USUARIO.md            # Manual do usuário
-├── INSTALACAO.md                # Este arquivo
+├── docs/MANUAL_USUARIO.md            # Manual do usuário
+├── docs/INSTALACAO.md                # Este arquivo
 ├── compile.sh                   # Script de compilação (Linux/macOS)
 ├── compile.bat                  # Script de compilação (Windows)
 ├── run.bat                      # Script de execução (Windows)
