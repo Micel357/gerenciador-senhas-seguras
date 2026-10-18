@@ -1,0 +1,101 @@
+{
+  "info": {
+    "_postman_id": "ed07d75e-46e8-4f62-a7f0-b99e78a13e37",
+    "name": "Gerenciador de Senhas Seguras - API local",
+    "description": "Coleção opcional para testar a API em 127.0.0.1:8080. Primeiro rode a aplicação. Defina masterPassword somente como variável local privada. Ao executar pela primeira vez, a coleção inicializa o cofre; nas próximas, desbloqueia-o. Todos os dados de conta usados nesta coleção são fictícios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8080" },
+    { "key": "masterPassword", "value": "" },
+    { "key": "csrfToken", "value": "" },
+    { "key": "vaultInitialized", "value": "false" },
+    { "key": "entryId", "value": "" },
+    { "key": "generatedId", "value": "" },
+    { "key": "backupFile", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 - Obter token CSRF",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/v1/auth/csrf" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('token CSRF disponível', () => pm.response.to.have.status(200));", "pm.collectionVariables.set('csrfToken', pm.response.json().token);"] } }]
+    },
+    {
+      "name": "02 - Estado do cofre",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/v1/vault/status" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('estado retornado', () => pm.response.to.have.status(200));", "pm.collectionVariables.set('vaultInitialized', String(pm.response.json().initialized));"] } }]
+    },
+    {
+      "name": "03 - Inicializar cofre (somente primeiro uso)",
+      "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (pm.collectionVariables.get('vaultInitialized') === 'true') pm.execution.skipRequest();"] } }],
+      "request": { "method": "POST", "header": [{ "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"masterPassword\": \"{{masterPassword}}\",\n  \"confirmation\": \"{{masterPassword}}\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/v1/vault/initialize" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('cofre inicializado', () => pm.response.to.have.status(201));"] } }]
+    },
+    {
+      "name": "04 - Desbloquear cofre (uso posterior)",
+      "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (pm.collectionVariables.get('vaultInitialized') !== 'true') pm.execution.skipRequest();"] } }],
+      "request": { "method": "POST", "header": [{ "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"masterPassword\": \"{{masterPassword}}\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/v1/vault/unlock" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('cofre desbloqueado', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "05 - Adicionar entrada de exemplo",
+      "request": { "method": "POST", "header": [{ "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"service\": \"email-teste-postman\",\n  \"username\": \"usuario@example.test\",\n  \"password\": \"Senha-Ficticia-Postman-2026!\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/v1/entries" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('entrada criada sem devolver senha', () => { pm.response.to.have.status(201); pm.expect(pm.response.json().password).to.be.undefined; });", "pm.collectionVariables.set('entryId', pm.response.json().id);"] } }]
+    },
+    {
+      "name": "06 - Listar (sem senhas)",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/v1/entries" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('lista não contém senhas', () => { pm.response.to.have.status(200); pm.response.json().forEach(item => pm.expect(item.password).to.be.undefined); });"] } }]
+    },
+    {
+      "name": "07 - Buscar entradas",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/v1/entries?query=email-teste-postman" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('busca concluída', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "08 - Consultar senha (endpoint explícito)",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/v1/entries/{{entryId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('detalhe da entrada', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().password).to.eql('Senha-Ficticia-Postman-2026!'); });"] } }]
+    },
+    {
+      "name": "09 - Atualizar senha",
+      "request": { "method": "PUT", "header": [{ "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"password\": \"Outra-Senha-Ficticia-2026!\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/v1/entries/{{entryId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('senha atualizada sem devolvê-la', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().password).to.be.undefined; });"] } }]
+    },
+    {
+      "name": "10 - Gerar entrada",
+      "request": { "method": "POST", "header": [{ "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"service\": \"gerado-postman\",\n  \"username\": \"usuario@example.test\",\n  \"length\": 20\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/v1/entries/generate" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('entrada gerada', () => { pm.response.to.have.status(201); pm.expect(pm.response.json().password).to.be.undefined; });", "pm.collectionVariables.set('generatedId', pm.response.json().id);"] } }]
+    },
+    {
+      "name": "11 - Validar senha",
+      "request": { "method": "POST", "header": [{ "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"password\": \"Exemplo-Muito-Forte-2026!\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/v1/passwords/validate" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('validação retornada', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "12 - Estatísticas",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/v1/stats" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('estatísticas retornadas', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "13 - Criar backup cifrado",
+      "request": { "method": "POST", "header": [{ "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/backups" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('backup criado', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('backupFile', pm.response.json().fileName);"] } }]
+    },
+    {
+      "name": "14 - Listar backups",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/v1/backups" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('backups listados', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "15 - Restaurar backup",
+      "request": { "method": "POST", "header": [{ "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/backups/{{backupFile}}/restore" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('backup restaurado', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "16 - Bloquear cofre",
+      "request": { "method": "POST", "header": [{ "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/vault/lock" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('cofre bloqueado', () => pm.response.to.have.status(204));"] } }]
+    }
+  ]
+}
