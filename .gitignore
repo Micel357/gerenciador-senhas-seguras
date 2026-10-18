@@ -1,9 +1,10 @@
 target/
 *.log
 .env
-*.db
-*.sqlite
-data/
-backup/
 .idea/
 *.iml
+data/
+backup/
+backups/
+*.db
+*.sqlite
